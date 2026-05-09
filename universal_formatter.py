@@ -92,18 +92,39 @@ class Typography:
 
     @staticmethod
     def apply_dashes(text):
+        # Длинное тире с пробелами (используем chr для безопасной вставки Unicode)
+        em_dash = chr(0x2014)  # —
+        en_dash = chr(0x2013)  # –
+        
         # Длинное тире с пробелами
-        text = re.sub(r'\s+-\s+', ' \u2014 ', text)
+        text = re.sub(r'\s+-\s+', f' {em_dash} ', text)
         # Диапазон (короткое тире без пробелов)
-        text = re.sub(r'(\d+)\s*-\s*(\d+)', r'\1\u2013\2', text)
+        text = re.sub(r'(\d+)\s*-\s*(\d+)', rf'\1{en_dash}\2', text)
         return text
 
     @staticmethod
     def double_space_after_period(text):
         # Двойной пробел после точки, но не после сокращений
-        abbrevs = r'(т\.е|т\.к|и\.т\.д|и\.т\.п|см|рис|табл|гл|п|ст|д|кв|корп|ООО|АО|ИП|ПАО|ЗАО|№|г)'
-        pattern = r'(?<!\w)(?<!' + abbrevs + r')([.!?])\s+'
-        return re.sub(pattern, r'\1  ', text)
+        # Используем простой подход без look-behind переменной длины
+        # Сначала обрабатываем основные сокращения
+        protected = [
+            r'т\.е\.', r'т\.к\.', r'и\.т\.д', r'и\.т\.п', 
+            r'см\.', r'рис\.', r'табл\.', r'гл\.', 
+            r'п\.', r'ст\.', r'д\.', r'кв\.', r'корп\.',
+            r'ООО', r'АО', r'ИП', r'ПАО', r'ЗАО', r'№', r'г\.'
+        ]
+        # Временная замена сокращений
+        for i, abbr in enumerate(protected):
+            text = re.sub(abbr + r'\s+', f'__ABBR{i}__', text)
+        
+        # Добавляем двойной пробел после точки
+        text = re.sub(r'([.!?])\s+', r'\1  ', text)
+        
+        # Возвращаем сокращения обратно
+        for i, abbr in enumerate(protected):
+            text = re.sub(f'__ABBR{i}__', abbr + ' ', text)
+        
+        return text
 
     @staticmethod
     def process(text):
